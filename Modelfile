@@ -1,0 +1,5 @@
+FROM ./good_girl.gguf
+TEMPLATE {{ .Prompt }}
+PARAMETER temperature 0
+PARAMETER top_k 1
+PARAMETER num_ctx 256
