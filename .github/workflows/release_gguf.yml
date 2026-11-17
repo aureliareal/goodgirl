@@ -1,0 +1,48 @@
+name: Build and publish GGUF
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Train, test, and export GGUF
+        run: python good_girl.py
+
+      - name: Verify release files
+        run: test -s good_girl.gguf && test -s Modelfile
+
+      - name: Publish files to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build-{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('Automatic build {0}', github.run_number) }}
+          target_commitish: main
+          generate_release_notes: true
+          files: |
+            good_girl.gguf
+            Modelfile
+          fail_on_unmatched_files: true
